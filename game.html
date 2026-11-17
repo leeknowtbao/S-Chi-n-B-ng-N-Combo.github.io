@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trắc Nghiệm Lịch Sử - Bài 5: Quá Trình Xâm Lược Và Cai Trị Của Chủ Nghĩa Thực Dân Ở Đông Nam Á</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #FF416C, #FF4B2B);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            padding: 15px;
+        }
+
+        /* Container Chính */
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 650px;
+            text-align: center;
+            position: relative;
+            transform: scale(1);
+            transition: transform 0.2s;
+        }
+
+        /* Hiệu ứng Shake khi chọn sai */
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-4px, 0, 0) rotate(-2deg); }
+            20%, 80% { transform: translate3d(8px, 0, 0) rotate(4deg); }
+            30%, 50%, 70% { transform: translate3d(-8px, 0, 0) rotate(-4deg); }
+            40%, 60% { transform: translate3d(8px, 0, 0) rotate(4deg); }
+        }
+
+        /* Hiệu ứng Pop khi chọn đúng */
+        .pop {
+            animation: pop 0.3s ease-in-out;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        h1 { color: #333; margin-bottom: 15px; font-size: 26px; }
+
+        /* Thanh thời gian */
+        .timer-bar {
+            width: 100%;
+            height: 12px;
+            background: #eee;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .timer-progress {
+            height: 100%;
+            width: 100%;
+            background: #4CAF50;
+            transition: width 0.1s linear, background-color 0.3s;
+        }
+
+        /* Thông tin màn chơi */
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 15px;
+        }
+
+        .combo-badge {
+            position: absolute;
+            top: -15px;
+            right: -15px;
+            background: #FFD700;
+            color: #000;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 900;
+            transform: rotate(15deg);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+            display: none;
+            animation: pulse 0.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { transform: rotate(15deg) scale(1); }
+            100% { transform: rotate(15deg) scale(1.2); }
+        }
+
+        .question {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.4;
+        }
+
+        /* Nút lựa chọn - Chuyển sang 1 cột để hiển thị đầy đủ câu trả lời dài */
+        .options {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .btn {
+            background: #6c5ce7;
+            color: white;
+            border: none;
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.1s;
+            box-shadow: 0 4px 0 #4b38b3;
+            text-align: left;
+            line-height: 1.4;
+        }
+
+        .btn:hover { background: #5a49e0; }
+        .btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #4b38b3;
+        }
+
+        .btn-start {
+            background: #2ecc71;
+            box-shadow: 0 5px 0 #27ae60;
+            width: 100%;
+            font-size: 20px;
+            padding: 18px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .btn-start:hover { background: #27ae60; }
+
+        /* Canvas pháo hoa */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 99;
+        }
+
+        .hide { display: none; }
+    </style>
+</head>
+<body>
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <div class="game-container" id="game-card">
+        <div class="combo-badge" id="combo">COMBO x2! 🔥</div>
+
+        <!-- Màn hình bắt đầu -->
+        <div id="start-screen">
+            <h1>🌏 TRẮC NGHIỆM LỊCH SỬ (10 CÂU) 🌏</h1>
+            <p style="margin-bottom: 20px; color: #666;">Bài 5: Quá Trình Xâm Lược Và Cai Trị Của Chủ Nghĩa Thực Dân Ở Đông Nam Á - Phần 1 - Mục a)Quá trình xâm lược. Trả lời đúng liên tiếp để nhân điểm Combo!</p>
+            <button class="btn btn-start" onclick="startGame()">BẮT ĐẦU LÀM BÀI!</button>
+        </div>
+
+        <!-- Màn hình chơi game -->
+        <div id="quiz-screen" class="hide">
+            <div class="stats">
+                <span>Điểm: <span id="score" style="color: #e74c3c;">0</span></span>
+                <span>Câu: <span id="question-number">1</span>/10</span>
+            </div>
+
+            <div class="timer-bar">
+                <div class="timer-progress" id="timer"></div>
+            </div>
+
+            <div class="question" id="question-text">Câu hỏi sẽ hiện ở đây?</div>
+
+            <div class="options" id="options-container">
+                <!-- Các nút đáp án sẽ tự tạo bằng JS -->
+            </div>
+        </div>
+
+        <!-- Màn hình kết thúc -->
+        <div id="end-screen" class="hide">
+            <h1>HOÀN THÀNH KIỂM TRA! 🎉</h1>
+            <p style="font-size: 18px; margin: 10px 0;">Tổng điểm của bạn:</p>
+            <h2 id="final-score" style="font-size: 48px; color: #e74c3c; margin-bottom: 10px;">0</h2>
+            <p id="rank-text" style="font-weight: bold; color: #2ecc71; margin-bottom: 20px; font-size: 18px;"></p>
+            <button class="btn btn-start" onclick="startGame()">LÀM LẠI 🔄</button>
+        </div>
+    </div>
+
+    <script>
+        // Danh sách 10 câu hỏi Lịch Sử
+        const questions = [
+            {
+                q: "Câu 1: Sự kiện nào đánh dấu mốc mở đầu quá trình thực dân phương Tây xâm lược Đông Nam Á vào thế kỉ XVI?",
+                options: [
+                    "A. Tây Ban Nha xâm lược Phi-líp-pin",
+                    "B. Bồ Đào Nha đánh chiếm cảng Ma-lắc-ca",
+                    "C. Hà Lan đặt ách thống trị ở In-đô-nê-xi-a",
+                    "D. Anh lập cảng thương mại tại Xin-ga-po"
+                ],
+                answer: 1 // B
+            },
+            {
+                q: "Câu 2: Thực dân Hà Lan đã tiến hành xâm lược và thiết lập ách thống trị ở In-đô-nê-xi-a trong khoảng thời gian nào?",
+                options: [
+                    "A. Từ thế kỉ XVI đến cuối thế kỉ XVI",
+                    "B. Từ đầu thế kỉ XIX đến giữa thế kỉ XX",
+                    "C. Từ thế kỉ XVII đến đầu thế kỉ XIX",
+                    "D. Từ thế kỉ XVIII đến năm 1945"
+                ],
+                answer: 2 // C
+            },
+            {
+                q: "Câu 3: Năm 1898 đánh dấu bước chuyển biến nào trong tình hình chính trị của Phi-líp-pin?",
+                options: [
+                    "A. Phi-líp-pin giành lại được hoàn toàn nền độc lập từ tay châu Âu",
+                    "B. Nhật Bản thay thế Tây Ban Nha thống trị Phi-líp-pin",
+                    "C. Anh tiến hành chia đôi Phi-líp-pin với Tây Ban Nha",
+                    "D. Mỹ thay thế Tây Ban Nha trở thành nước thống trị Phi-líp-pin"
+                ],
+                answer: 3 // D
+            },
+            {
+                q: "Câu 4: Thực dân Anh đã từng bước kiểm soát và biến Xin-ga-po thành thuộc địa trong khoảng thời gian nào?",
+                options: [
+                    "A. Từ năm 1819 đến năm 1824",
+                    "B. Năm 1511 đến năm 1515",
+                    "C. Từ năm 1858 đến năm 1884",
+                    "D. Từ năm 1900 đến năm 1905"
+                ],
+                answer: 0 // A
+            },
+            {
+                q: "Câu 5: Thực dân Anh bắt đầu đẩy mạnh quá trình xâm lược Ma-lai-xi-a vào thời điểm nào?",
+                options: [
+                    "A. Đầu thế kỉ XVI",
+                    "B. Cuối thế kỉ XVIII - đầu thế kỉ XIX",
+                    "C. Giữa thế kỉ XX",
+                    "D. Cuối thế kỉ XIX - đầu thế kỉ XX"
+                ],
+                answer: 1 // B
+            },
+            {
+                q: "Câu 6: Vì sao các nước thực dân phương Tây lại tập trung xâm lược Đông Nam Á hải đảo ngay từ giai đoạn đầu (thế kỉ XVI)?",
+                options: [
+                    "A. Vì dân cư ở đây yêu cầu các nước phương Tây sang giúp đỡ phát triển kinh tế",
+                    "B. Vì các nước ở đây không có bất kỳ tổ chức quân sự hay chính quyền nào",
+                    "C. Vì đây là khu vực có vị trí giao thông hàng hải huyết mạch và giàu hương liệu, sản vật quý",
+                    "D. Vì Giáo hội Cơ đốc giáo yêu cầu giải phóng lãnh thổ hải đảo"
+                ],
+                answer: 2 // C
+            },
+            {
+                q: "Câu 7: Để thống trị các nước Đông Nam Á hải đảo, các chính quyền thực dân thường kết hợp hai hình thức cai trị nào?",
+                options: [
+                    "A. Cai trị dân chủ trực tiếp và cai trị tự trị địa phương hoàn toàn",
+                    "B. Cai trị bằng pháp luật quốc tế và trưng cầu dân ý",
+                    "C. Cai trị bằng chia đều quyền lực cho người bản địa và người nhập cư",
+                    "D. Cai trị trực tiếp và cai trị gián tiếp (thông qua bộ máy phong kiến bản địa)"
+                ],
+                answer: 3 // D
+            },
+            {
+                q: "Câu 8: Bản chất kinh tế trong chính sách cai trị của thực dân phương Tây ở Đông Nam Á hải đảo là gì?",
+                options: [
+                    "A. Hỗ trợ thuộc địa công nghiệp hóa hiện đại theo mô hình phương Tây",
+                    "B. Biến thuộc địa thành nguồn cung cấp nguyên liệu, nhiên liệu và thị trường tiêu thụ cho chính quốc",
+                    "C. Thiết lập thị trường tự do cạnh tranh bình đẳng giữa chính quốc và thuộc địa",
+                    "D. Chuyển giao toàn bộ vốn và công nghệ cao cho người dân bản địa"
+                ],
+                answer: 1 // B
+            },
+            {
+                q: "Câu 9: Nội dung cốt lõi của chính sách \"chia để trị\" mà thực dân phương Tây áp dụng ở Đông Nam Á là gì?",
+                options: [
+                    "A. Khơi sâu mâu thuẫn dân tộc, tôn giáo và tầng lớp để làm suy yếu sức mạnh đoàn kết của nhân dân bản địa",
+                    "B. Chia đều ruộng đất của quý tộc cho toàn bộ nông dân thuộc địa",
+                    "C. Phân chia địa giới hành chính thành các quốc gia độc lập ngang hàng",
+                    "D. Chia sẻ quyền lực quản lý nhà nước cho các đảng phái yêu nước"
+                ],
+                answer: 0 // A
+            },
+            {
+                q: "Câu 10: Một trong những hệ quả xã hội lâu dài dưới thời trị vì của Tây Ban Nha tại Phi-líp-pin là gì?",
+                options: [
+                    "A. Phật giáo trở thành quốc giáo thống trị toàn bộ quần đảo",
+                    "B. Chế độ thị tộc mẫu hệ truyền thống phát triển đỉnh cao",
+                    "C. Đạo Công giáo trở nên phổ biến và hình thành tầng lớp địa chủ lớn sở hữu ruộng đất",
+                    "D. Phi-líp-pin hoàn toàn tách rời khỏi ảnh hưởng văn hóa phương Tây"
+                ],
+                answer: 2 // C
+            }
+        ];
+
+        let currentQ = 0;
+        let score = 0;
+        let combo = 0;
+        let timeLeft = 100;
+        let timerInterval;
+        
+        // Âm thanh giả lập bằng Web Audio API
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(freq, type, duration) {
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e){}
+        }
+
+        function playCorrectSound() {
+            playSound(587.33, 'triangle', 0.1);
+            setTimeout(() => playSound(880, 'triangle', 0.2), 100);
+        }
+
+        function playWrongSound() {
+            playSound(150, 'sawtooth', 0.3);
+        }
+
+        // Bắt đầu Game
+        function startGame() {
+            currentQ = 0;
+            score = 0;
+            combo = 0;
+            document.getElementById('start-screen').classList.add('hide');
+            document.getElementById('end-screen').classList.add('hide');
+            document.getElementById('quiz-screen').classList.remove('hide');
+            showQuestion();
+        }
+
+        // Hiển thị câu hỏi
+        function showQuestion() {
+            resetTimer();
+            const q = questions[currentQ];
+            document.getElementById('question-number').innerText = currentQ + 1;
+            document.getElementById('question-text').innerText = q.q;
+            document.getElementById('score').innerText = score;
+            
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+
+            q.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn';
+                btn.innerText = opt;
+                btn.onclick = () => selectAnswer(index);
+                optionsContainer.appendChild(btn);
+            });
+
+            updateComboUI();
+        }
+
+        // Đếm ngược thời gian (Điều chỉnh chậm hơn một chút để kịp đọc đề dài: ~16 giây/câu)
+        function resetTimer() {
+            clearInterval(timerInterval);
+            timeLeft = 100;
+            const timerEl = document.getElementById('timer');
+            
+            timerInterval = setInterval(() => {
+                timeLeft -= 0.6; 
+                timerEl.style.width = timeLeft + '%';
+
+                if (timeLeft > 50) timerEl.style.backgroundColor = '#4CAF50';
+                else if (timeLeft > 20) timerEl.style.backgroundColor = '#FF9800';
+                else timerEl.style.backgroundColor = '#f44336';
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    handleAction(false); // Hết giờ tính là sai
+                }
+            }, 100);
+        }
+
+        // Xử lý chọn đáp án
+        function selectAnswer(index) {
+            clearInterval(timerInterval);
+            const isCorrect = index === questions[currentQ].answer;
+            handleAction(isCorrect);
+        }
+
+        // Hiệu ứng và Logic Hành động
+        function handleAction(isCorrect) {
+            const card = document.getElementById('game-card');
+            
+            if (isCorrect) {
+                playCorrectSound();
+                combo++;
+                score += 100 + (combo * 30); // Điểm bonus theo Combo
+                
+                // Hiệu ứng Pop & Pháo hoa
+                card.classList.add('pop');
+                setTimeout(() => card.classList.remove('pop'), 300);
+                fireConfetti();
+
+            } else {
+                playWrongSound();
+                combo = 0; // Mất combo khi chọn sai
+                
+                // Hiệu ứng Rung màn hình
+                card.classList.add('shake');
+                setTimeout(() => card.classList.remove('shake'), 500);
+            }
+
+            currentQ++;
+            if (currentQ < questions.length) {
+                setTimeout(showQuestion, 500);
+            } else {
+                setTimeout(endGame, 500);
+            }
+        }
+
+        function updateComboUI() {
+            const comboEl = document.getElementById('combo');
+            if (combo > 1) {
+                comboEl.innerText = `COMBO x${combo}! 🔥`;
+                comboEl.style.display = 'block';
+            } else {
+                comboEl.style.display = 'none';
+            }
+        }
+
+        // Kết thúc Game & Xếp hạng
+        function endGame() {
+            document.getElementById('quiz-screen').classList.add('hide');
+            document.getElementById('end-screen').classList.remove('hide');
+            document.getElementById('final-score').innerText = score;
+
+            let rank = "";
+            if (score >= 1800) rank = "🏆 GIÁO SƯ SỬ HỌC! THUỘC LÒNG TỪNG CHI TIẾT!";
+            else if (score >= 1200) rank = "💡 Kiến thức lịch sử rất chắc chắn!";
+            else if (score >= 600) rank = "😐 Tạm ổn, ôn lại thêm một chút nhé!";
+            else rank = "📚 Cần mở sách Lịch Sử ra đọc lại ngay rồi!";
+
+            document.getElementById('rank-text').innerText = rank;
+            fireConfetti();
+        }
+
+        // --- HIỆU ỨNG PHÁO HOA (CONFETTI) ---
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function fireConfetti() {
+            for (let i = 0; i < 40; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    vx: (Math.random() - 0.5) * 14,
+                    vy: (Math.random() - 0.5) * 14,
+                    color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+                    size: Math.random() * 8 + 4,
+                    life: 90
+                });
+            }
+        }
+
+        function updateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, index) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.2; // Trọng lực
+                p.life -= 2;
+
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (p.life <= 0) particles.splice(index, 1);
+            });
+            requestAnimationFrame(updateParticles);
+        }
+        updateParticles();
+    </script>
+</body>
+</html>
